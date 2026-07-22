@@ -1,0 +1,14 @@
+from building import *
+
+cwd = GetCurrentDir()
+src	= Glob('*.c')
+
+CPPPATH = [cwd]
+
+src += Glob('./OTA/*.c')
+CPPPATH += [cwd,cwd+'/OTA']
+
+
+group = DefineGroup('User.base', src, depend = [], CPPPATH = CPPPATH)
+
+Return('group')

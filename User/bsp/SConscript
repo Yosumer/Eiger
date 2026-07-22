@@ -1,0 +1,40 @@
+'''
+Author: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
+Date: 2025-03-04 13:21:02
+LastEditors: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
+LastEditTime: 2025-03-25 10:43:51
+FilePath: \EigeV1.0.01\User\bsp\SConscript
+Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+'''
+from building import *
+
+cwd = GetCurrentDir()
+src	= Glob('*.c')
+SrcRemove(src,['bsp_step_L6470.c'])
+SrcRemove(src,['bsp_encode_Timer8.c'])
+CPPPATH = [cwd]
+
+
+if GetDepend(['BSP_USING_L6470']):
+    src += Glob('./l6470/*.c')
+    src += Glob('./bsp_step_L6470.c')
+    CPPPATH += [cwd,cwd+'/l6470']
+
+if GetDepend(['BSP_USING_SRAM']):
+    src += Glob('bsp_sram.c')
+
+if GetDepend(['BSP_USING_TMC5160']):
+    src += Glob('./tmc5160/*.c')
+    CPPPATH += [cwd,cwd+'/tmc5160']
+
+if GetDepend(['BSP_USING_ADC128S102']):
+    src += Glob('./adc128S102/*.c')
+    CPPPATH += [cwd,cwd+'/adc128S102']
+
+if GetDepend(['BSP_USING_AD7730']):
+    src += Glob('./ad7730/*.c')
+    CPPPATH += [cwd,cwd+'/ad7730']
+
+group = DefineGroup('User.bsp', src, depend = [], CPPPATH = CPPPATH)
+
+Return('group')

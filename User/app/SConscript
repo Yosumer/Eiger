@@ -1,0 +1,28 @@
+
+from building import *
+
+cwd = GetCurrentDir()
+src	= Glob('*.c')
+
+CPPPATH = [cwd]
+# if GetDepend(['APP_USING_LIQUID_MODULE']):
+#     src += Glob('./liquid/*.c')
+#     CPPPATH = [cwd,cwd+'/liquid']
+# if GetDepend(['APP_USING_QM_MODULE']):
+#     src += Glob('./qm/*.c')
+#     CPPPATH += [cwd,cwd+'/qm']
+
+
+if GetDepend(['APP_USING_LIQUID_MODULE']):
+    src += Glob('./liquid/*.c')
+    CPPPATH += [cwd,cwd+'/liquid']
+if GetDepend(['APP_USING_OPT_MODULE']):
+    src += Glob('./opt/*.c')
+    CPPPATH += [cwd,cwd+'/opt']
+if GetDepend(['APP_USING_AIR_MODULE']):
+    src += Glob('./air/*.c')
+    CPPPATH += [cwd,cwd+'/air']
+
+group = DefineGroup('User.app', src, depend = [], CPPPATH = CPPPATH)
+
+Return('group')

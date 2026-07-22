@@ -1,0 +1,16 @@
+import os
+import rtconfig
+from building import *
+
+cwd = GetCurrentDir()
+src = Split('''
+    spi_flash_init.c
+''')
+src += Glob('fal_cfg.h')
+if GetDepend(['BSP_USING_SPI_E2PROM']):
+    src += Glob('fal_flash_m95512_port.c')
+CPPPATH = [cwd]
+
+group = DefineGroup('User.port', src, depend = [], CPPPATH = CPPPATH)
+
+Return('group')
