@@ -1270,6 +1270,9 @@ uint32_t TMC5160_init(uint8_t motor)
 // todo ADD API 3: Some Registers have default hardware configuration from OTP, we shouldnt overwrite those - add the weak write register permission and use it here (LH)
 // Default Register Values
 // #define R00 0x00000008  // GCONF
+
+#if 0
+// 这里整个屏蔽的是老电机使用的
 #define R00 0x0000000C  // GCONF
 #define R09 0x00010606  // SHORT_CONF
 #define R0A 0x00080400  // DRV_CONF
@@ -1313,6 +1316,62 @@ uint32_t TMC5160_init(uint8_t motor)
 // #define R70 0xC40C001E  // PWMCONF
 #define R6C 0x00416153  // CHOPCONF
 #define R70 0x00040600  // PWMCONF
+// 以上都是老电机使用的
+#endif
+
+#define R00 0x0000000C  // GCONF
+#define R09 0x00010606  // SHORT_CONF
+#define R0A 0x00080400  // DRV_CONF
+#define R11 0x0000000A  // TPOWERDOWN
+#define R2B 0x00000001  // VSTOP
+
+#if TMC5160_USE_NEW_MOTOR
+
+/* 新电机：首轮低噪声配置，运行电流约1.5A */
+#define R0B 0x000000A7  // GLOBAL_SCALER=167
+#define R10 0x00071F0A  // IHOLD=10, IRUN=31, IHOLDDELAY=7
+#define R13 0x000000B0  // TPWMTHRS，约80RPM切换
+#define R3A 0x000C1F40  // ENC_CONST=794432
+
+/* TMC5160默认正弦微步表 */
+#define R60 0xAAAAB554
+#define R61 0x4A9554AA
+#define R62 0x24492929
+#define R63 0x10104222
+#define R64 0xFBFFFFFF
+#define R65 0xB5BB777D
+#define R66 0x49295556
+#define R67 0x00404222
+#define R68 0xFFFF8056
+#define R69 0x00F70000
+
+#define R6C 0x00010045  // CHOPCONF
+#define R70 0xC40C001E  // PWMCONF
+
+#else
+
+/* 原电机配置，保持现有参数 */
+#define R0B 0x00000000  // GLOBAL_SCALER=256
+#define R10 0x00071504
+#define R13 0x00001400
+#define R3A 0x00010000
+
+#define R60 0x55ADAD6C
+#define R61 0x294AAAAB
+#define R62 0x04211249
+#define R63 0x00000401
+#define R64 0x7BDFDFF0
+#define R65 0xB5B76EEF
+#define R66 0x294AAAD5
+#define R67 0x00408889
+#define R68 0xFFFF8356
+#define R69 0x00F10000
+
+#define R6C 0x00416153
+#define R70 0x00040600
+
+#endif
+
 /* Register access permissions:
  * 0: none (reserved)
  * 1: read
@@ -1336,7 +1395,7 @@ const uint8_t tmc5160_defaultRegisterAccess[TMC5160_REGISTER_COUNT] =
 const int32_t tmc5160_defaultRegisterResetState[TMC5160_REGISTER_COUNT] =
 {
 //  0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
-    R00, 0,   0,   0,   0,   0,   0,   0,   0,   R09, R0A, 0,   0,   0,   0,   0, // 0x00 - 0x0F
+    R00, 0,   0,   0,   0,   0,   0,   0,   0,   R09, R0A, R0B,   0,   0,   0,   0, // 0x00 - 0x0F
     R10, R11, 0,   R13,   0,   0,   0,   0,   0,   0,   0,   R2B, 0,   0,   0,   0, // 0x10 - 0x1F
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, // 0x20 - 0x2F
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   R3A, 0,   0,   0,   0,   0, // 0x30 - 0x3F

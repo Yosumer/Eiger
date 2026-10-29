@@ -83,7 +83,7 @@ int AppConfig_Start(void)
 	ramdata.fw1.data.FWversion2 = 0x1;
 	ramdata.fw1.data.FWversion3 = 0x0;
 	ramdata.fw1.data.FWversion4 = 0x1;
-	ramdata.fw1.data.FWversion5 = 16;
+	ramdata.fw1.data.FWversion5 = 17;
 	
   ramNoInit._updateflag = 0;  //进入正常APP后将升级标志位置0
 	LOG_D("_updateflag:%d",ramNoInit._updateflag);

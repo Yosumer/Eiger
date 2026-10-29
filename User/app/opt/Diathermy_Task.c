@@ -128,7 +128,7 @@ int Diathermy_Task_Init(void)
 INIT_APP_EXPORT(Diathermy_Task_Init);
 
 //是否使能看门狗
-#define ENABLE_WATCHDOG                 0
+#define ENABLE_WATCHDOG                 1
 #define WDT_DEVICE_NAME    "wdt"    /* 看门狗设备名称 */
 static rt_device_t wdg_dev = RT_NULL; /* 看门狗设备句柄 */
 rt_uint32_t timeout =40;        /* 溢出时间，单位：毫秒 */
@@ -163,7 +163,7 @@ int8_t _Diathermy_WatchDog_Init()
     }
 }
 
-#define DIA_MAX_VOL_ADC   32937 //83V
+#define DIA_MAX_VOL_ADC   32937 //83V  
 #define DIA_MIN_VOL_ADC   2051 //83V
 #define DIA_MAX_CUR_ADC   41000 //83V
 #define DIA_MIN_CUR_ADC   500 //83V
@@ -237,14 +237,17 @@ void Diathermy_Task(void *arg)
         {
             _diathermy._data->_info =  bsp_dia_getInfo(_diathermy._dia_handler);
             
-            if (_diathermy._data->_read_valve > 2)  //输出大于百分之2才检测
+            if(ramcof._is_dia_error_detected)
             {
-                _Diathermy_CurrentVol_Check();
-            }
-            if (_diathermy._errorCode >0)
-            {
-                Diathermy_Pedal_Disconnect();
-                _diathermy._errorCode = 0;
+                if (_diathermy._data->_read_valve > 2)  //输出大于百分之2才检测
+                {
+                    _Diathermy_CurrentVol_Check();
+                }
+                if (_diathermy._errorCode >0)
+                {
+                    Diathermy_Pedal_Disconnect();
+                    _diathermy._errorCode = 0;
+                }
             }
         }        
         rt_thread_delay(5);

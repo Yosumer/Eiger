@@ -72,10 +72,10 @@ enum AIR_ERROR {
 };
 
 enum DIATHERMY_ERROR {
-    DIATHERMY_CURRENT_MAX_ERROR = 0X8501,         //电凝功率异常
-    DIATHERMY_CURRENT_MIN_ERROR = 0X8502,          //电凝功率丢失
-    DIATHERMY_VOL_MAX_ERROR = 0X8503,   //电凝温度异常
-    DIATHERMY_VOL_MIN_ERROR = 0X8504,    //电凝温度丢失 
+    DIATHERMY_CURRENT_MAX_ERROR = 0X8501,         //电凝最大电流异常
+    DIATHERMY_CURRENT_MIN_ERROR = 0X8502,          //电凝最小电流异常
+    DIATHERMY_VOL_MAX_ERROR = 0X8503,   //电凝最大电压异常
+    DIATHERMY_VOL_MIN_ERROR = 0X8504,    //电凝最小电压异常
 };
 
 typedef struct _Infusion_Task_Cof

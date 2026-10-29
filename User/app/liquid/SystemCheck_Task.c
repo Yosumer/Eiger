@@ -323,8 +323,13 @@ static QState  SystemCheck_Dia_Check(SystemCheck * const me, QEvt const * const 
             status_ = Q_HANDLED();
             break;
         }
+        //43690 ----> 2V
+        //200 -----> 9.15mv
+        //300 -----> 13.725mv
+        //800 -----> 36.6mv
         case TIMEOUT_SIG: {
-            if(bsp_get_valve(I_ADC_CH)>=200&&bsp_get_valve(I_ADC_CH)<=800)
+            // if(bsp_get_valve(I_ADC_CH)>=200&&bsp_get_valve(I_ADC_CH)<=800)
+            if(bsp_get_valve(I_ADC_CH)<=43690)  //???????
             {
                 me->Wdata->checkStatus._diathermy = 0;    //灌注阀门正常
                 status_ = Q_TRAN(&SystemCheck_Dia_CheckIO1);
@@ -369,7 +374,8 @@ static QState SystemCheck_Dia_CheckIO1(SystemCheck * const me, QEvt const * cons
                 break;
             }
             case TIMEOUT_SIG: {
-                if(bsp_get_valve(I_ADC_CH)>=300)
+                // if(bsp_get_valve(I_ADC_CH)>=300)
+                if(bsp_get_valve(I_ADC_CH)>=43690)  //???????
                 {
                     me->Wdata->checkStatus._diathermy |= 1;    //电凝异常
                     Diathermy_Task_SetPwr(0);
@@ -412,7 +418,8 @@ static QState SystemCheck_Dia_CheckIO2(SystemCheck * const me, QEvt const * cons
             break;
         }
         case TIMEOUT_SIG: {
-            if(bsp_get_valve(I_ADC_CH)>=300)
+            // if(bsp_get_valve(I_ADC_CH)>=300)
+            if(bsp_get_valve(I_ADC_CH)>=43690)  //???????
             {
                 me->Wdata->checkStatus._diathermy |= 1;    //电凝异常
             }

@@ -20,7 +20,9 @@
 extern "C" {
 #endif
 
-
+#ifndef TMC5160_USE_NEW_MOTOR
+#define TMC5160_USE_NEW_MOTOR  0
+#endif
 
 typedef struct
 {

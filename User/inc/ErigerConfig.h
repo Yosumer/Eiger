@@ -216,6 +216,9 @@ typedef struct
     uint32_t    _led_rgb_cof[10];                    //2个手柄的RGB灯  
     uint32_t    _led_enable;                         //LED使能
     uint32_t    _pedaldetectCof;                     //踏板检测
+		uint32_t    _set_zero;													 //积液盒负压清零
+    uint32_t    _is_cassette_detected;               //积液盒是否检测  
+    uint32_t    _is_dia_error_detected;             //电凝错误检测
     uint32_t    _unuse;                        //没有使用的字段
 }Config_Block;
 //序列号
@@ -302,6 +305,8 @@ typedef struct {
   
   dia_cal_param	_diaCalData;	//电凝校准信息
   uint32_t    _phacoruntime;
+
+  float    _N_torque; //单位N/m 扭矩
   uint32_t _unuse;    // 没有使用的字段
 } Data_Block;
 

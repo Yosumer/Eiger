@@ -33,6 +33,9 @@
 #define UNACTIVE_COLOR      0x000000
 
 
+#define PHACO_3D_CONFIG_DISABLE 0
+
+
 /* Defines -------------------------------------------------------------------*/
 #define PHACO_TASK_PRIO   20
 //#define PHACO_TASK_STK_SIZE    512
@@ -359,6 +362,7 @@ static void _Phaco_Update_CDE(Phaco_Task_t *_this,uint8_t _en)
         {
             /* 只把本次新增的有效L/V输出时间写入手柄运行时间。 */
             ramdata._phacoruntime += (_vaildtime - _last_time);
+            _this->_handpiece_runtime += (_vaildtime - _last_time);
             _this->WData->_pow += _increase;
         }
     }
@@ -487,11 +491,22 @@ static void __Phaco_Mode_Func(Phaco_Task_t *_this, uint8_t _mode)
                 rt_enter_critical();
                 if(_this->_percentofPedal > 0)
                 {
-                    int32_t _lpow = _this->Wcof->_prams._elpow - _this->Wcof->_prams._slpow;
-                    int32_t _vpow = _this->Wcof->_prams._evpow - _this->Wcof->_prams._svpow;
-                    App_Com_WriteRam(&_this->Wcof->_prams._lpow, (int32_t)((int32_t)(_lpow)*_this->_percentofPedal) / 100 + _this->Wcof->_prams._slpow);
-                    App_Com_WriteRam(&_this->Wcof->_prams._vpow, (int32_t)((int32_t)(_vpow)*_this->_percentofPedal) / 100 + _this->Wcof->_prams._svpow);
-                    App_Com_WriteRam(&_this->Wcof->_prams._cutetims, (2500 - ((2500 - _this->Wcof->_prams._stim)*_this->_percentofPedal) / 100));
+
+                    #if PHACO_3D_CONFIG_DISABLE
+                        int32_t _lpow = _this->Wcof->_prams._elpow - _this->Wcof->_prams._slpow;
+                        int32_t _vpow = _this->Wcof->_prams._evpow - _this->Wcof->_prams._svpow;
+                        App_Com_WriteRam(&_this->Wcof->_prams._lpow, (int32_t)((int32_t)(_lpow)*_this->_percentofPedal) / 100 + _this->Wcof->_prams._slpow);
+                        App_Com_WriteRam(&_this->Wcof->_prams._vpow, (int32_t)((int32_t)(_vpow)*_this->_percentofPedal) / 100 + _this->Wcof->_prams._svpow);
+                        App_Com_WriteRam(&_this->Wcof->_prams._cutetims, (2500 - ((2500 - _this->Wcof->_prams._stim)*_this->_percentofPedal) / 100));
+                    #else
+                        float _configDuty = (100.0f-_this->_percent_3d_config)/100.0f;
+                        int32_t _lpow = _this->_percentofPedal<=_this->_percent_3d_config?_this->Wcof->_prams._slpow:((_this->Wcof->_prams._elpow - _this->Wcof->_prams._slpow)/_configDuty)*((_this->_percentofPedal-_this->_percent_3d_config)/100.0f)+_this->Wcof->_prams._slpow;
+                        int32_t _vpow = _this->_percentofPedal<=_this->_percent_3d_config?_this->Wcof->_prams._svpow:((_this->Wcof->_prams._evpow - _this->Wcof->_prams._svpow)/_configDuty)*((_this->_percentofPedal-_this->_percent_3d_config)/100.0f)+_this->Wcof->_prams._svpow;
+                        App_Com_WriteRam(&_this->Wcof->_prams._lpow, _lpow);
+                        App_Com_WriteRam(&_this->Wcof->_prams._vpow, _vpow);
+                        uint32_t _cutetims = _this->_percentofPedal<=_this->_percent_3d_config?2500:(2500 - (((2500 - _this->Wcof->_prams._stim)/_configDuty)*((_this->_percentofPedal-_this->_percent_3d_config)/100.0f)));
+                        App_Com_WriteRam(&_this->Wcof->_prams._cutetims, _cutetims);
+                    #endif
                     _this->WData->_cutetims = _this->Wcof->_prams._cutetims;
                 }
                 _Phaco_Update_CDE(&_phaco,1);    //计算CDE
@@ -571,7 +586,7 @@ static void __Phaco_Mode_Func(Phaco_Task_t *_this, uint8_t _mode)
             break;
         case PHACO_SCANFREQ_MODE:
         {
-            if(rt_memcmp(&_this->_localCof,&_this->Wcof->_prams,sizeof(Phaco_Prams_Cof)))
+            if(rt_memcmp(&_this->_localCof,&_this->Wcof->_prams,sizeof(Phaco_Prams_Cof)) && _this->_handle_scan_sta !=0)
             {
                 rt_memcpy(&_this->_localCof,&_this->Wcof->_prams,sizeof(Phaco_Prams_Cof));
                 _this->_handle_scan_sta = 0;    //清除扫频状态
@@ -595,13 +610,20 @@ static void _Phaco_Task_Handpiece_write_e2prom(Phaco_Task_t *_this)
     //这里更新手柄eeprom中的信息
     if(_phaco.handpice->_read_e2prom)
     {
+        
         //计算当前手柄使用时间
-        _this->WData->_tag_info._tag.info.data.power.time += _this->WData->_footcntim/1000.0f;
+        // _this->WData->_tag_info._tag.info.data.power.time += _this->WData->_footcntim/1000.0f;
+        _this->WData->_tag_info._tag.info.data.power.time = _this->_handpiece_runtime/1000.0f+_this->_handpiece_loadRunTime;
         //计算当前手柄使用次数
         _this->WData->_tag_info._tag.info.data.power.cnt = _this->_handpiece_usecnt;
-        int32_t _increase = _this->WData->_sumpow - _this->_lastpwr;
-        _this->WData->_tag_info._tag.info.data.power.cde  +=  (_increase<0?_this->WData->_sumpow:_increase)/12500.0f; //每次只写入增量
-        _this->_lastpwr = _this->WData->_sumpow;
+        // int32_t _increase = _this->WData->_sumpow - _this->_lastpwr;
+        // _this->WData->_tag_info._tag.info.data.power.cde  +=  (_increase<0?_this->WData->_sumpow:_increase)/12500.0f; //每次只写入增量
+        // _this->_lastpwr = _this->WData->_sumpow;
+
+        float _increase = _this->WData->_pow - _this->_lastpwr;
+        _this->WData->_tag_info._tag.info.data.power.cde  +=  (_increase<0?_this->WData->_pow:_increase); //每次只写入增量
+        _this->_lastpwr = _this->WData->_pow;
+
         //写入手柄中
         _Phaco_HandPice1_Write_E2prom( _this->WData->_tag_info._tag.info.data.type,E2PROM_WRITE_OFFSET+offsetof(Handpiece_tag_t,info.data),sizeof(Handpiece_data_t));
     }
@@ -649,7 +671,7 @@ static void _Phaco_Task_ErrorHandler(bsp_ult_error *_error)
         if(_error->bits.com == 1)     //通信错误
         {
             bsp_error_list_add(PHACP_COM_ERROR);
-			_error->bits.com  = 0;
+						_error->bits.com  = 0;
         }
         else
         {
@@ -668,11 +690,16 @@ static void _Phaco_Task_ErrorHandler(bsp_ult_error *_error)
                 bsp_error_list_add(PHACO_TRANSDUCER_ERROR);
             }
 
-            if(bsp_ultprotocol_reset_Error(_phaco.ult_handler) == 0)    
-            {   
-            //    _error->bits.com = 1;     //复位错误指令不回消息 这条需要屏蔽
-                _error->_error = 0;     //手动清空所有错误
-            }
+//            if(bsp_ultprotocol_reset_Error(_phaco.ult_handler) == 0)    
+//            {   
+//            //    _error->bits.com = 1;     //复位错误指令不回消息 这条需要屏蔽
+//                _error->_error = 0;     //手动清空所有错误
+//            }
+						
+						if(bsp_ultprotocol_clear_error(_phaco.ult_handler)==0)
+						{
+								_error->_error = 0;     //手动清空所有错误
+						}
             else    //清除错误成功
             {
                 _error->_error = 0;     //手动将所有错误都清除
@@ -810,6 +837,8 @@ static void _Phaco_HandPice1_Connected()
     // 6.增加使用次数
     // _phaco.WData->_tag_info._tag.info.data.power.cnt++;
     _phaco._handpiece_usecnt = _phaco.WData->_tag_info._tag.info.data.power.cnt;
+    _phaco._handpiece_loadRunTime = _phaco.WData->_tag_info._tag.info.data.power.time; //清空手柄加载时运行时间
+    _phaco._handpiece_runtime = 0; //清空手柄运行时间
     _phaco._handpiece_usecnt++;
 }
 static void _Phaco_HandPice1_Disconnected()
@@ -903,6 +932,9 @@ int Phaco_Task_Init(void)
     _phaco.Wcof->_rgb_cof[0] = ACTIVE_COLOR|0xFD000000;
 
 
+
+    _phaco._percent_3d_config = 15; //默认3D脚踏配置为10%
+    _phaco._handpiece_runtime = 0; //清空手柄运行时间
     // 初始化插入检测
     rt_pin_mode(PHACO_CONNECT_PIN, PIN_MODE_INPUT_PULLUP);
 
@@ -931,6 +963,7 @@ int Phaco_Task_Init(void)
         bsp_m95512_ContiueWrite(e2p1, 0, (uint8_t*)inifinte_data, 1024);
 #endif // DEBUG
     }
+		
 		Flash_PhacoParam_init();
     Phaco_Task_ResetPwr();
     Pedal_Task_RegisterFun(Phaco_Pedal_Deal);
@@ -952,6 +985,25 @@ INIT_APP_EXPORT(Phaco_Task_Init);
 
 void Phaco_Task(void *arg)
 {
+	
+		rt_thread_delay(500);
+			//这里需要判断版本号读取问题
+		uint32_t _DspVersion = bsp_ultprotocol_query_dspVersion(_phaco.ult_handler);
+		if(0 !=_DspVersion )
+		{
+			ramdata.fw1.data.FWnum1 = _DspVersion;
+		}
+		else	//这里再读一遍
+			ramdata.fw1.data.FWnum1 = bsp_ultprotocol_query_dspVersion(_phaco.ult_handler);		//获取DSP版本号
+		
+		
+		uint32_t  _FPGAVersion = bsp_ultprotocol_query_fpgaVersion(_phaco.ult_handler);
+		if(0 != _FPGAVersion)
+		{
+			ramdata.fw1.data.FWnum2 = _FPGAVersion;
+		}
+		else
+			ramdata.fw1.data.FWnum2 = bsp_ultprotocol_query_fpgaVersion(_phaco.ult_handler);  //获取FPGA版本号
     while (1)
     {
         if(_phaco.Wcof->_detectionConn) //检测手柄
@@ -994,15 +1046,28 @@ void Phaco_Task_SetData(Phaco_Task_Data *_data)
 static void _Phaco_Update_Percent(uint32_t _percent)
 {
 
+
     _phaco._percentofPedal = (_percent > 100) ? 100 : _percent;
 
+    
     if(_phaco._percentofPedal)
     {
+    #if PHACO_3D_CONFIG_DISABLE
         int32_t _lpow = _phaco.Wcof->_prams._elpow - _phaco.Wcof->_prams._slpow;
         int32_t _vpow = _phaco.Wcof->_prams._evpow - _phaco.Wcof->_prams._svpow;
         App_Com_WriteRam(&_phaco.Wcof->_prams._lpow, (int32_t)((int32_t)(_lpow)*_phaco._percentofPedal) / 100 + _phaco.Wcof->_prams._slpow);
         App_Com_WriteRam(&_phaco.Wcof->_prams._vpow, (int32_t)((int32_t)(_vpow)*_phaco._percentofPedal) / 100 + _phaco.Wcof->_prams._svpow);
         App_Com_WriteRam(&_phaco.Wcof->_prams._cutetims, (2500 - ((2500 - _phaco.Wcof->_prams._stim)*_phaco._percentofPedal) / 100));
+    #else
+
+        float _configDuty = (100.0f-_phaco._percent_3d_config)/100.0f;
+        int32_t _lpow = _phaco._percentofPedal<=_phaco._percent_3d_config?_phaco.Wcof->_prams._slpow:((_phaco.Wcof->_prams._elpow - _phaco.Wcof->_prams._slpow)/_configDuty)*((_phaco._percentofPedal-_phaco._percent_3d_config)/100.0f)+_phaco.Wcof->_prams._slpow;
+        int32_t _vpow = _phaco._percentofPedal<=_phaco._percent_3d_config?_phaco.Wcof->_prams._svpow:((_phaco.Wcof->_prams._evpow - _phaco.Wcof->_prams._svpow)/_configDuty)*((_phaco._percentofPedal-_phaco._percent_3d_config)/100.0f)+_phaco.Wcof->_prams._svpow;
+        App_Com_WriteRam(&_phaco.Wcof->_prams._lpow, _lpow);
+        App_Com_WriteRam(&_phaco.Wcof->_prams._vpow, _vpow);
+        uint32_t _cutetims = _phaco._percentofPedal<=_phaco._percent_3d_config?2500:(2500 - (((2500 - _phaco.Wcof->_prams._stim)/_configDuty)*((_phaco._percentofPedal-_phaco._percent_3d_config)/100.0f)));
+        App_Com_WriteRam(&_phaco.Wcof->_prams._cutetims, _cutetims);
+    #endif  //这里屏蔽的是老的版本脚踏控制，新的版本脚踏控制是根据3D脚踏配置来控制的
     }
     else
     {

@@ -110,6 +110,7 @@ typedef struct Suction {
     uint32_t    _tempflow;
     Suction_Task_Data * Wdata;
     Suction_Task_Cof * Wcof;
+    uint32_t    _rawtorque;
 } Suction;
 
 extern Suction Suction_inst;
@@ -203,18 +204,32 @@ QActive *const AO_Suction =&Suction_inst.super;
 // };
 
 
-// 3号机带针
+// // 3号机带针
+// CalibrationPara Pumpcali = {
+//     .A = 13.243304,
+//     .B = 2003.5285683,
+//     .C = 1936.0502571,
+// };
+
+// 新版本流量校准参数
 CalibrationPara Pumpcali = {
-    .A = 13.243304,
-    .B = 2003.5285683,
-    .C = 1936.0502571,
+    .A = 8.2056179,
+    .B = 1727.9417,
+    .C = 3247.2426,
 };
 //3号机器(发布)
-CalibrationPara Vaccumcali = {
-    .A = -0.000152957,
-    .B = 719.65,
-    .C = 0,
-};
+//CalibrationPara Vaccumcali = {
+//    .A = -0.000152957,
+//    .B = 719.65,
+//    .C = 0,
+//};
+
+ // 动物9号机临时版本
+ CalibrationPara Vaccumcali = {
+     .A = -0.0001470089,
+     .B = 718.49,
+     .C = 0,
+ };
 ////8号机临时版本
 //CalibrationPara Vaccumcali = {
 //    .A = -0.000150632,
@@ -222,9 +237,19 @@ CalibrationPara Vaccumcali = {
 //    .C = 0,
 //};
 
+
+
+CalibrationPara Torquecali = {
+    .A = 0.0000022350,
+    .B = - 11.0713287931,
+    .C = 0
+};
+
+
 PressureSensor_t    _MotorPump;         //蠕动泵校准参数
 PressureSensor_t    _VaccumSensor;
 
+PressureSensor_t    _TorqueSensor;    //扭矩传感器校准参数
 
 typedef struct _SuctionCaseCtl
 {
@@ -295,7 +320,7 @@ static uint32_t _Suction_Get_InputValue(uint32_t _min, uint32_t _max,uint32_t _p
     {
         _min = _max;
     }
-    return (_percent==0?0:(_percent * (_max - _min) / 100) + _min);
+    return (_percent==0?0:(_percent * (float)((_max - _min) / 100.0f)) + _min);
 }
 
 
@@ -512,8 +537,10 @@ SuctionCase _suctioncase = {0};
 void Suction_Task_Handler(uint32_t _inputflow, uint32_t _pumbpamp,uint32_t _maxLimitvaccum)
 {
 
-    float _currentVaccum = Suction_inst.Wdata->_vaccumpressure<0? (-(Suction_inst.Wdata->_vaccumpressure)):Suction_inst.Wdata->_vaccumpressure;             //当前负压
-    float _PumpVaccum = _pumbpamp>=100?(_maxLimitvaccum-10):((float)_pumbpamp/100.0)*_maxLimitvaccum;          //当前泵压
+    // float _currentVaccum = Suction_inst.Wdata->_vaccumpressure<0? (-(Suction_inst.Wdata->_vaccumpressure)):Suction_inst.Wdata->_vaccumpressure;             //当前负压
+    float _currentVaccum = Suction_inst.Wdata->_vaccumpressure<0? (-(Suction_inst.Wdata->_vaccumpressure)):0;   //防止正压操作
+    float _currentTurn =_maxLimitvaccum *0.1f;   //最大泵限压点下默认使用10%的泵压
+    float _PumpVaccum = _pumbpamp>=100?(_maxLimitvaccum-_currentTurn):((float)_pumbpamp/100.0)*_maxLimitvaccum;          //当前泵压
     float _scale = (float)(_currentVaccum-_PumpVaccum)/(float)((_maxLimitvaccum)-_PumpVaccum);
     _scale = _scale<0?0.0:_scale;
     Suction_inst.Wdata->_ctlValue = ((1-_scale)*_inputflow<0)?0:(1-_scale)*_inputflow;
@@ -574,6 +601,13 @@ uint32_t Suction_ctor(void) {
     bsp_prsureSen_SetCalib(&_VaccumSensor,Vaccumcali);
 
     Data_Task_RegisterSensor(&_VaccumSensor,&Suction_inst.Wdata->_vaccumRawdata,&Suction_inst.Wdata->_vaccumpressure);
+
+
+    _TorqueSensor.channel = EXTERN_VACCUM_PRESSURE_ADC_CH;
+    bsp_prsureSen_Init(&_TorqueSensor,_VaccumPressureSensor_Read);
+    bsp_prsureSen_SetCalib(&_TorqueSensor,Torquecali);
+    Data_Task_RegisterSensor(&_TorqueSensor,&Suction_inst._rawtorque,&ramdata._N_torque);
+
 
     _SuctionCase_Init(&_suctioncase,bsp_suction_SourceCtl,_Suction_Task_GetPressure);
 
@@ -671,7 +705,14 @@ static QState Suction_Suction_Idel(Suction * const me, QEvt const * const e) {
         case Q_ENTRY_SIG: {
             me->Wdata->_state = SUCTION_STATE_IDEL;
             bsp_suction_SourceCtl(0);
-            if(me->Wdata->_prstate >=SUCTION_STATE_RUN && Suction_inst.Wdata->_ctlValue>0)
+//            if(me->Wdata->_prstate >=SUCTION_STATE_RUN && Suction_inst.Wdata->_ctlValue>0)
+//            {
+//                ErigeEvt *pe;
+//                pe = Q_NEW(ErigeEvt,DRAIN_ENABLE_SIG);
+//                QACTIVE_POST(AO_Reflux,&pe->super,NULL);
+//            }
+					
+						if(me->Wdata->_prstate >=SUCTION_STATE_RUN && Suction_inst.Wdata->_inputCtlValue>0)
             {
                 ErigeEvt *pe;
                 pe = Q_NEW(ErigeEvt,DRAIN_ENABLE_SIG);
@@ -679,6 +720,7 @@ static QState Suction_Suction_Idel(Suction * const me, QEvt const * const e) {
             }
             me->Wdata->_percentofPedal = 0;
             me->Wdata->_ctlValue = 0;
+						me->Wdata->_inputCtlValue = 0;
             status_ = Q_HANDLED();
             break;
         }

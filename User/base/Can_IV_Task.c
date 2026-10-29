@@ -205,3 +205,25 @@ int Can_IV_Task_OTA_Send(uint8_t *_msg,uint8_t _len)
     rt_mutex_release(&_can_iv_tx_mutex);
     return size;
 }
+
+int Can_PhacoBoard_Task_OTA_Send(uint8_t *_msg,uint8_t _len)
+{
+    struct rt_can_msg msg = {0};
+    rt_size_t  size;
+    rt_mutex_take(&_can_iv_tx_mutex,RT_WAITING_FOREVER);
+    msg.id = (0xFF-PHACO_BOARD_MODULE_CAN_ID);     /*???????????ID*/
+    msg.ide = RT_CAN_STDID;     /* ?????? */
+    msg.rtr = RT_CAN_DTR;       /* ????? */
+    msg.len = _len;                /* ???????? 8 */
+    /* ??????? 8 ??????? */
+    rt_memcpy(msg.data,_msg,_len);
+
+    /* ?????? CAN ???? */
+    size = rt_device_write(can_iv_dev, 0, &msg, sizeof(msg));
+    if (size == 0)
+    {
+        LOG_D("can_iv_dev write data failed!\n");
+    }
+    rt_mutex_release(&_can_iv_tx_mutex);
+    return size;
+}

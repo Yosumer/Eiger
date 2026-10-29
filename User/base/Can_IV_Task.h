@@ -15,7 +15,7 @@
 /* Defines -------------------------------------------------------------------*/
 #define SELF_IV_CAN_ID                             IV_CAN_ID   
 #define IV_CAN_ID                               0XA0 
-
+#define PHACO_BOARD_MODULE_CAN_ID               0X88            //  超乳板模块
 /* Variables -----------------------------------------------------------------*/
 // IV 杆的通信格式为 01 E6 10 01 00 00 00 00
 
@@ -24,7 +24,7 @@ int Can_IV_Task_Init(void);
 int Can_IV_Task_SendMsg(uint8_t *_msg,uint8_t _len);
 void Can_IV_Task_Control(uint32_t bottle_height);
 int Can_IV_Task_OTA_Send(uint8_t *_msg,uint8_t _len);
-
+int Can_PhacoBoard_Task_OTA_Send(uint8_t *_msg,uint8_t _len);
 
 
 

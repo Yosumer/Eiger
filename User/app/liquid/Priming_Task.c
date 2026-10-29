@@ -813,10 +813,11 @@ static QState Priming_Start_Phaco_Test(Priming * const me, QEvt const * const e)
             if (me->Wdata->_primingRuntime == 0) {
                 status_ = Q_TRAN(&Priming_IDEL);
             }
-            else if (me->Wdata->_primingRuntime==(15000+_Priming_Task_Phaco_CalcRunTime(me->Wcof->_phacoTest))-2000)
+            else if (me->Wdata->_primingRuntime==(15000+_Priming_Task_Phaco_CalcRunTime(me->Wcof->_phacoTest))-2000) //23S
             {
                 // _Priming_Task_Phaco_Test(0,30); //提前预振一次
 								ramcof.phacocof._prams._ltim = 20;
+								Phaco_Task_SetScanState(-1);
                 Phaco_Task_SetMode(PHACO_SCANFREQ_MODE,ramcof.phacocof._prams);
                 status_ = Q_HANDLED();
             }
@@ -831,7 +832,7 @@ static QState Priming_Start_Phaco_Test(Priming * const me, QEvt const * const e)
                     status_ = Q_HANDLED();
             }
             //${AOs::Priming::SM::active::Start_Phaco_Test::TIMEOUT::[me->Wdata->_primingRuntime>=700~}
-            else if (me->Wdata->_primingRuntime>=(15000+_Priming_Task_Phaco_CalcRunTime(me->Wcof->_phacoTest))-18000 && me->Wdata->_primingRuntime<(15000+_Priming_Task_Phaco_CalcRunTime(me->Wcof->_phacoTest))-10000) {
+            else if (me->Wdata->_primingRuntime>=(15000+_Priming_Task_Phaco_CalcRunTime(me->Wcof->_phacoTest))-18000 && me->Wdata->_primingRuntime<(15000+_Priming_Task_Phaco_CalcRunTime(me->Wcof->_phacoTest))-20000) {
                 
                 if(me->Wcof->_phacoTest == PRIMING_PHACO_TEST_LONGITUDINALTRANSVERSE) //纵扭复合
                 {

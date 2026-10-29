@@ -20,7 +20,11 @@ rt_uint8_t  ota_task_stack[OTA_MANGER_TASK_SIZE];
 rt_uint8_t  ota_down_task_stack[OTA_MANGER_DOWN_STACK_SIZE];
 
 
+#define     OTA_UP_RECV_BUF_SIZE            1100
+#define     OTA_DOWN_RECV_BUF_SIZE          20
+const char _phaco_start_cmd[] = "UP"; //超乳板升级开始命令
 rt_tcpclient_t  *ota_client = RT_NULL;
+extern ota_com_interface _can1downstream_inface; 
 void  OTA_Manger_Task_Cmd(uint16_t _addr,uint32_t _data)
 {
     if(_addr == (uint16_t)&_ota._WCof->_module)
@@ -37,6 +41,10 @@ void  OTA_Manger_Task_Cmd(uint16_t _addr,uint32_t _data)
         {
             OTA_Manger_Task_Set_Downstream_Interface(&_pedaldownstream_inface); 
         }
+        else if (_data == OTA_CMD_PHACO_BOARD)
+        {
+            OTA_Manger_Task_Set_Downstream_Interface(&_can1downstream_inface);
+        }
         else
         {
             LOG_E("OTA_Manger_Task_Cmd: Module Error");
@@ -48,19 +56,27 @@ void  OTA_Manger_Task_Cmd(uint16_t _addr,uint32_t _data)
         {
             //清空环形队列
             // OTA_Manger_Task_DeInit();
-            _ota.downrecvbuf = rt_malloc(20);
+            _ota.downrecvbuf = rt_malloc(OTA_DOWN_RECV_BUF_SIZE);
             if (_ota.downrecvbuf == RT_NULL)
             {
                 LOG_E("RT_MALLOC DOWNCEVBUF FAILD!!!");
             }
-            
-            _ota.uprecvbuf = rt_malloc(1100);
+            rt_memset(_ota.downrecvbuf, 0, OTA_DOWN_RECV_BUF_SIZE);
+            _ota.uprecvbuf = rt_malloc(OTA_UP_RECV_BUF_SIZE);
             if (_ota.uprecvbuf == RT_NULL)
             {
                 LOG_E("RT_MALLOC uprecvbuf FAILD!!!");
             }
+            rt_memset(_ota.uprecvbuf, 0, OTA_UP_RECV_BUF_SIZE);
             rt_completion_done(&_ota._waitup_completion);  //完成等待
             rt_completion_done(&_ota._waitdown_completion);  //完成等待
+
+
+            if (_ota._WCof->_module == OTA_CMD_PHACO_BOARD) //超乳板需要单独发
+            {
+                _ota._downstreamInterface->ota_com_send((uint8_t*)_phaco_start_cmd,2);  //发送PHACO
+            }
+
         }
         else if (_data == OTA_CMD_STOP)
         {
@@ -131,6 +147,28 @@ static int32_t OTA_IVDownStream_Send(uint8_t *buf,uint16_t len)
 ota_com_interface _ivdownstream_inface = {
     .ota_com_recv = OTA_DownStream_Recv,  //接收数据
     .ota_com_send = OTA_IVDownStream_Send,  //发送数据
+ };
+
+ static int32_t OTA_PhacoBoardDownStream_Send(uint8_t *buf,uint16_t len)
+ {
+     uint16_t _packet_cnt = len/8;
+     uint8_t  _packet_remain = len % 8;   //理论上包的数为8的正数倍 
+ 
+     for(uint16_t i = 0; i < _packet_cnt; i++) {
+         int ret = Can_PhacoBoard_Task_OTA_Send(&buf[i*8],8);   //发送8的正数
+         if (i%20 == 0)
+         {
+             rt_thread_mdelay(1);  //延时10ms后重新发送
+         }
+         
+     }
+     // 发送最后一包
+     Can_PhacoBoard_Task_OTA_Send(&buf[_packet_cnt*8],_packet_remain);
+     return len;
+ }
+ota_com_interface _can1downstream_inface = {
+    .ota_com_recv = OTA_DownStream_Recv,  //接收数据
+    .ota_com_send = OTA_PhacoBoardDownStream_Send,  //发送数�?
  };
 
 

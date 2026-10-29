@@ -17,7 +17,7 @@
 #define OTA_CMD_MODULE_EIGER    0xE5    //Eiger模块
 #define OTA_CMD_MODULE_IV       0xE6    //IV杆模块
 #define OTA_CMD_MODULE_PEDAL    0x0D    //脚踏模块
-
+#define OTA_CMD_PHACO_BOARD     0x0B    //超乳板模块
 #define OTA_BUFF_SIZE   2048
 
 

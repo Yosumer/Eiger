@@ -418,6 +418,27 @@ float bsp_ultprotocol_query_SumPower(ult_protocol_t *_this)
         return _this->_info._sumPower;
 }
 
+
+
+uint32_t bsp_ultprotocol_query_dspVersion(ult_protocol_t *_this)
+{
+	//获取DSP软件版本
+    if(bsp_ultprotocol_ctl_cmd(_this,ULT_QUERY_VERSION))
+        return _this->_info.version;	
+		return 0;
+}
+
+uint32_t bsp_ultprotocol_query_fpgaVersion(ult_protocol_t *_this)
+{
+	//获取FPGA软件版本
+    if(bsp_ultprotocol_ctl_cmd(_this,ULT_QUERY_FPGA_VERSION))
+        return _this->_info.fpga_version;
+		return 0;
+}
+
+
+
+
 ult_protocol_t ult_handler = {0};
 static ult_ops _ops = {0}; 
 rt_device_t ult_uart = RT_NULL;

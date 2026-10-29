@@ -239,4 +239,7 @@ uint8_t bsp_ultprotocol_sendcmd(ult_cmd _cmd);
 uint8_t bsp_ultprotocol_scan_Freq(ult_protocol_t *_this);
 uint32_t bsp_ultprotocol_query_handle_det_ready(ult_protocol_t *_this);
 uint8_t bsp_ultprotocol_clear_error(ult_protocol_t *_this);
+uint32_t bsp_ultprotocol_query_dspVersion(ult_protocol_t *_this);
+uint32_t bsp_ultprotocol_query_fpgaVersion(ult_protocol_t *_this);
+
 #endif

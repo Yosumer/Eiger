@@ -288,7 +288,9 @@ typedef struct Phaco_Task
 		phaco_cal_param_t	*_lcali_tbl;
 		phaco_cal_param_t	*_vcali_tbl;
 	}cal_param_t;
-	
+	uint32_t    _percent_3d_config;         //3D脚踏配置
+    float       _handpiece_loadRunTime;     //手柄加载时运行时间
+    uint32_t    _handpiece_runtime;        //手柄运行时间
 }Phaco_Task_t;
 
 /* Functions ----------------------------------------------------------------*/

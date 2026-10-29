@@ -1,6 +1,7 @@
 #include "Sensor_Task.h"
 #include "Cassette_Task.h"
 #include "Data_Task.h"
+#include "ErigerConfig.h"
 #include "Infusion_Task.h"
 #include "Suction_Task.h"
 #include "bsp_step_tmc5160.h"
@@ -243,8 +244,13 @@ static void _Sensor_EventHandler(const char *name,btn_event_t event)
 			}
 			else if(strcmp(name,CARES)==0)	
 			{
-				ErigeEvt *pe = Q_NEW(ErigeEvt,CASSETTERELEASE_SIG);
-				QACTIVE_PUBLISH(&pe->super,NULL);
+
+
+				if (ramcof._is_cassette_detected == 1)
+				{
+					ErigeEvt *pe = Q_NEW(ErigeEvt,CASSETTERELEASE_SIG);
+					QACTIVE_PUBLISH(&pe->super,NULL);
+				}
 				ramdata._cassette_state._release_sig = 1;	//退盒
 				LOG_D("%s:Press On",name);
 			}
@@ -515,6 +521,9 @@ int Sensor_Init()
 
 	// 已经在电机初始化中初始了IO口
 	_Sensors_LowLevel_Init();
+
+	ramcof._is_cassette_detected = 1; //积液盒检测使能
+
 	// 2.初始化btn结构体
 
 	btn_fsm_Init(&cassette_release,Cassette_ReleaseRead,TIMEOUT,CARES);

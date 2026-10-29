@@ -44,6 +44,7 @@
 #define ELECT_MODULE_CAN_ID                     0x84            //  电凝模块ID
 #define PHACO_MODULE_CAN_ID                     0X85            //  超乳模块
 #define IV_MODULE_CAN_ID                        0X86            //  IV模块
+#define PHACO_BOARD_MODULE_CAN_ID               0X88            //  超乳板模块
 /* Variables -----------------------------------------------------------------*/
 #define CAN_OTA_ID_COV(ID) (0XFF-ID)
 

@@ -113,7 +113,7 @@
         <tDllPa></tDllPa>
         <tDlgDll></tDlgDll>
         <tDlgPa></tDlgPa>
-        <tIfile></tIfile>
+        <tIfile>.\load.ini</tIfile>
         <pMon>BIN\CMSIS_AGDI.dll</pMon>
       </DebugOpt>
       <TargetDriverDllRegistry>
@@ -168,7 +168,7 @@
         <Ww>
           <count>2</count>
           <WinNumber>1</WinNumber>
-          <ItemText>ramdata,0x0A</ItemText>
+          <ItemText>ramdata,0x10</ItemText>
         </Ww>
         <Ww>
           <count>3</count>
@@ -178,14 +178,46 @@
         <Ww>
           <count>4</count>
           <WinNumber>1</WinNumber>
-          <ItemText>_phaco</ItemText>
+          <ItemText>_phaco,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>5</count>
           <WinNumber>1</WinNumber>
           <ItemText>ramctl</ItemText>
         </Ww>
+        <Ww>
+          <count>6</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>Suction_inst,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>7</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>tmc5160_motor,0x0A</ItemText>
+        </Ww>
       </WatchWindow1>
+      <WatchWindow2>
+        <Ww>
+          <count>0</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>dia_adc,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>1</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>adc_sample_data,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>2</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>ramdata</ItemText>
+        </Ww>
+        <Ww>
+          <count>3</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>ramcof</ItemText>
+        </Ww>
+      </WatchWindow2>
       <MemoryWindow1>
         <Mm>
           <WinNumber>1</WinNumber>
@@ -3108,7 +3140,7 @@
 
   <Group>
     <GroupName>User.app</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
